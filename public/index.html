@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chatroom</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --accent-hover: #7d75ff;
+      --text: #e8eaf6;
+      --text-muted: #7c80a0;
+      --success: #4caf7d;
+      --danger: #f06292;
+      --msg-bg: #1e2235;
+      --own-bg: #2a2560;
+      --radius: 10px;
+      --sidebar-w: 220px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ── JOIN SCREEN ── */
+    #join-screen {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span { color: var(--accent); }
+
+    .logo p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+    .hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 5px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-msg {
+      background: rgba(240,98,146,0.12);
+      border: 1px solid rgba(240,98,146,0.3);
+      color: var(--danger);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-top: 14px;
+      display: none;
+    }
+
+    /* ── CHAT SCREEN ── */
+    #chat-screen {
+      display: none;
+      width: 100%;
+      height: 100dvh;
+      flex-direction: column;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .room-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .chat-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .header-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid rgba(240,98,146,0.3);
+      color: var(--danger);
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 8px;
+    }
+
+    .btn-danger:hover { background: rgba(240,98,146,0.1); }
+
+    .chat-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── MESSAGES ── */
+    .messages-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      scroll-behavior: smooth;
+    }
+
+    #messages::-webkit-scrollbar { width: 5px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 72%;
+      animation: fadeUp 0.15s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg.own { align-self: flex-end; align-items: flex-end; }
+    .msg.other { align-self: flex-start; align-items: flex-start; }
+
+    .msg-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+      padding: 0 4px;
+    }
+
+    .msg-bubble {
+      background: var(--msg-bg);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .msg.own .msg-bubble {
+      background: var(--own-bg);
+      border-bottom-right-radius: 4px;
+    }
+
+    .msg.other .msg-bubble {
+      border-bottom-left-radius: 4px;
+    }
+
+    .sys-msg {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 6px 0;
+      font-style: italic;
+    }
+
+    .msg-input-wrap {
+      padding: 14px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    #msg-input {
+      flex: 1;
+      resize: none;
+      height: 42px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 10px 14px;
+    }
+
+    .btn-send {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 18px;
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .btn-send:hover { background: var(--accent-hover); }
+    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #member-list {
+      overflow-y: auto;
+      flex: 1;
+      padding: 8px 0;
+    }
+
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      cursor: default;
+      transition: background 0.1s;
+    }
+
+    .member-item:hover { background: var(--surface2); }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      background: var(--accent);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .member-name {
+      font-size: 14px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .member-you {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .sidebar { display: none; }
+      .msg { max-width: 90%; }
+    }
+
+    .typing-area {
+      display: flex;
+      align-items: flex-end;
+    }
+  </style>
+</head>
+<body>
+
+<!-- JOIN SCREEN -->
+<div id="join-screen">
+  <div class="logo">
+    <h1>chat<span>room</span></h1>
+    <p>Join a room and start chatting instantly</p>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label for="inp-room">Room name</label>
+      <input id="inp-room" type="text" placeholder="e.g. general, my-project" autocomplete="off" />
+      <div class="hint">Letters, numbers, hyphens only. Case-insensitive.</div>
+    </div>
+    <div class="form-group">
+      <label for="inp-user">Your name</label>
+      <input id="inp-user" type="text" placeholder="e.g. Alice" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label for="inp-pass">Password <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <input id="inp-pass" type="password" placeholder="Leave empty for open room" />
+      <div class="hint">Set a password to protect the room. The first person in creates it.</div>
+    </div>
+    <button class="btn btn-primary" id="join-btn">Join Room →</button>
+    <div class="error-msg" id="join-error"></div>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div id="chat-screen">
+  <div class="chat-header">
+    <span class="room-badge" id="hdr-room">#room</span>
+    <div>
+      <h2 id="hdr-title">Room</h2>
+      <div class="header-meta" id="hdr-meta">0 members</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="copy-btn" title="Copy WebSocket URL">Copy WS URL</button>
+      <button class="btn btn-danger" id="leave-btn">Leave</button>
+    </div>
+  </div>
+
+  <div class="chat-body">
+    <div class="messages-wrap">
+      <div id="messages"></div>
+      <div class="msg-input-wrap">
+        <textarea id="msg-input" placeholder="Type a message… (Enter to send, Shift+Enter for newline)" rows="1"></textarea>
+        <button class="btn-send" id="send-btn" title="Send">↑</button>
+      </div>
+    </div>
+    <div class="sidebar">
+      <div class="sidebar-header">Members</div>
+      <div id="member-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────
+  let ws = null
+  let myUserId = null
+  let myRoom = null
+  let members = {}   // userId -> { userId, username, meta }
+
+  // ── DOM ────────────────────────────────────────────────────
+  const joinScreen  = document.getElementById('join-screen')
+  const chatScreen  = document.getElementById('chat-screen')
+  const inpRoom     = document.getElementById('inp-room')
+  const inpUser     = document.getElementById('inp-user')
+  const inpPass     = document.getElementById('inp-pass')
+  const joinBtn     = document.getElementById('join-btn')
+  const joinError   = document.getElementById('join-error')
+  const hdrRoom     = document.getElementById('hdr-room')
+  const hdrTitle    = document.getElementById('hdr-title')
+  const hdrMeta     = document.getElementById('hdr-meta')
+  const messages    = document.getElementById('messages')
+  const msgInput    = document.getElementById('msg-input')
+  const sendBtn     = document.getElementById('send-btn')
+  const memberList  = document.getElementById('member-list')
+  const leaveBtn    = document.getElementById('leave-btn')
+  const copyBtn     = document.getElementById('copy-btn')
+
+  // ── Helpers ────────────────────────────────────────────────
+  function wsUrl() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+    return `${proto}://${location.host}/ws`
+  }
+
+  function timestamp(iso) {
+    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
+  function initials(name) {
+    return (name || '?').slice(0, 2).toUpperCase()
+  }
+
+  function avatarColor(userId) {
+    const colors = ['#6c63ff','#e91e8c','#00bcd4','#4caf50','#ff9800','#9c27b0','#f44336','#2196f3']
+    let hash = 0
+    for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) | 0
+    return colors[Math.abs(hash) % colors.length]
+  }
+
+  function scrollBottom() {
+    messages.scrollTop = messages.scrollHeight
+  }
+
+  function showError(msg) {
+    joinError.textContent = msg
+    joinError.style.display = 'block'
+  }
+
+  function hideError() {
+    joinError.style.display = 'none'
+  }
+
+  function updateMemberCount() {
+    const count = Object.keys(members).length
+    hdrMeta.textContent = `${count} member${count !== 1 ? 's' : ''}`
+  }
+
+  // ── Member list ────────────────────────────────────────────
+  function renderMembers() {
+    memberList.innerHTML = ''
+    for (const m of Object.values(members)) {
+      const item = document.createElement('div')
+      item.className = 'member-item'
+      item.dataset.uid = m.userId
+
+      const av = document.createElement('div')
+      av.className = 'avatar'
+      if (m.meta?.avatar) {
+        const img = document.createElement('img')
+        img.src = m.meta.avatar
+        img.onerror = () => { av.textContent = initials(m.username) }
+        av.appendChild(img)
+      } else {
+        av.textContent = initials(m.username)
+        av.style.background = m.meta?.color || avatarColor(m.userId)
+      }
+
+      const nameWrap = document.createElement('div')
+      const nameEl = document.createElement('div')
+      nameEl.className = 'member-name'
+      nameEl.textContent = m.username
+      nameWrap.appendChild(nameEl)
+
+      if (m.userId === myUserId) {
+        const you = document.createElement('div')
+        you.className = 'member-you'
+        you.textContent = 'you'
+        nameWrap.appendChild(you)
+      }
+
+      item.appendChild(av)
+      item.appendChild(nameWrap)
+      memberList.appendChild(item)
+    }
+    updateMemberCount()
+  }
+
+  // ── Message rendering ──────────────────────────────────────
+  function appendSysMsg(text) {
+    const el = document.createElement('div')
+    el.className = 'sys-msg'
+    el.textContent = text
+    messages.appendChild(el)
+    scrollBottom()
+  }
+
+  function appendMsg({ userId, username, payload, timestamp: ts }) {
+    const isOwn = userId === myUserId
+    const text = typeof payload === 'string'
+      ? payload
+      : (payload?.text ?? JSON.stringify(payload))
+
+    const wrapper = document.createElement('div')
+    wrapper.className = `msg ${isOwn ? 'own' : 'other'}`
+
+    const meta = document.createElement('div')
+    meta.className = 'msg-meta'
+    meta.textContent = isOwn ? timestamp(ts) : `${username}  ${timestamp(ts)}`
+
+    const bubble = document.createElement('div')
+    bubble.className = 'msg-bubble'
+    bubble.textContent = text
+
+    wrapper.appendChild(meta)
+    wrapper.appendChild(bubble)
+    messages.appendChild(wrapper)
+    scrollBottom()
+  }
+
+  // ── WebSocket ──────────────────────────────────────────────
+  function connect(room, username, password) {
+    ws = new WebSocket(wsUrl())
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        type: 'join',
+        room,
+        username,
+        ...(password ? { password } : {}),
+      }))
+    }
+
+    ws.onmessage = (ev) => {
+      let msg
+      try { msg = JSON.parse(ev.data) } catch { return }
+      handleMessage(msg)
+    }
+
+    ws.onclose = () => {
+      if (myRoom) {
+        appendSysMsg('Disconnected from server.')
+        sendBtn.disabled = true
+        msgInput.disabled = true
+      }
+    }
+
+    ws.onerror = () => {
+      showError('Could not connect to the server. Please try again.')
+      switchToJoin()
+    }
+  }
+
+  function handleMessage(msg) {
+    switch (msg.type) {
+      case 'joined': {
+        myUserId = msg.userId
+        myRoom   = msg.room
+
+        // Populate member map
+        members = {}
+        for (const m of msg.members) members[m.userId] = m
+
+        hdrRoom.textContent  = `#${msg.room}`
+        hdrTitle.textContent = msg.room
+        renderMembers()
+
+        switchToChat()
+
+        // Replay history
+        if (msg.history.length > 0) {
+          appendSysMsg(`— ${msg.history.length} earlier message${msg.history.length !== 1 ? 's' : ''} —`)
+          for (const entry of msg.history) appendMsg(entry)
+        } else {
+          appendSysMsg('You joined the room. Say hi!')
+        }
+        break
+      }
+
+      case 'user-joined': {
+        members[msg.userId] = { userId: msg.userId, username: msg.username, meta: msg.meta }
+        renderMembers()
+        appendSysMsg(`${msg.username} joined the room`)
+        break
+      }
+
+      case 'user-left': {
+        delete members[msg.userId]
+        renderMembers()
+        appendSysMsg(`${msg.username} left the room`)
+        break
+      }
+
+      case 'say': {
+        appendMsg(msg)
+        break
+      }
+
+      case 'meta-updated': {
+        if (members[msg.userId]) {
+          members[msg.userId].username = msg.username
+          members[msg.userId].meta = msg.meta
+          renderMembers()
+        }
+        break
+      }
+
+      case 'error': {
+        if (!myRoom) {
+          // Pre-join errors
+          showError(msg.message)
+          joinBtn.disabled = false
+          ws = null
+        } else {
+          appendSysMsg(`Error: ${msg.message}`)
+        }
+        break
+      }
+    }
+  }
+
+  function send(text) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+    ws.send(JSON.stringify({ type: 'say', payload: { type: 'chat', text } }))
+  }
+
+  // ── UI transitions ─────────────────────────────────────────
+  function switchToChat() {
+    joinScreen.style.display = 'none'
+    chatScreen.style.display = 'flex'
+    msgInput.focus()
+  }
+
+  function switchToJoin() {
+    chatScreen.style.display = 'none'
+    joinScreen.style.display = 'block'
+    myUserId = null
+    myRoom   = null
+    members  = {}
+    messages.innerHTML = ''
+    memberList.innerHTML = ''
+    sendBtn.disabled = false
+    msgInput.disabled = false
+    msgInput.value = ''
+  }
+
+  // ── Event listeners ────────────────────────────────────────
+  joinBtn.addEventListener('click', () => {
+    const room = inpRoom.value.trim().toLowerCase()
+    const username = inpUser.value.trim()
+    const password = inpPass.value
+
+    if (!room) { showError('Room name is required.'); return }
+    if (!/^[a-z0-9-]+$/.test(room)) { showError('Room name may only contain letters, numbers, and hyphens.'); return }
+    if (!username) { showError('Your name is required.'); return }
+
+    hideError()
+    joinBtn.disabled = true
+    connect(room, username, password)
+  })
+
+  leaveBtn.addEventListener('click', () => {
+    ws?.close()
+    switchToJoin()
+  })
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(wsUrl()).then(() => {
+      copyBtn.textContent = 'Copied!'
+      setTimeout(() => { copyBtn.textContent = 'Copy WS URL' }, 2000)
+    })
+  })
+
+  msgInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      const text = msgInput.value.trim()
+      if (text) {
+        send(text)
+        msgInput.value = ''
+        msgInput.style.height = ''
+      }
+    }
+  })
+
+  // Auto-resize textarea
+  msgInput.addEventListener('input', () => {
+    msgInput.style.height = ''
+    msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px'
+  })
+
+  sendBtn.addEventListener('click', () => {
+    const text = msgInput.value.trim()
+    if (text) {
+      send(text)
+      msgInput.value = ''
+      msgInput.style.height = ''
+    }
+  })
+
+  // Enter in join form
+  [inpRoom, inpUser, inpPass].forEach(el => {
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') joinBtn.click() })
+  })
+
+  // Normalize room name while typing
+  inpRoom.addEventListener('input', () => {
+    const pos = inpRoom.selectionStart
+    inpRoom.value = inpRoom.value.toLowerCase()
+    inpRoom.setSelectionRange(pos, pos)
+  })
+</script>
+</body>
+</html>

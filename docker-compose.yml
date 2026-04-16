@@ -1,0 +1,16 @@
+services:
+  chatroom:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    environment:
+      - PORT=${PORT:-3000}
+      - WS_PATH=${WS_PATH:-/ws}
+      - MAX_HISTORY=${MAX_HISTORY:-100}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chatroom.rule=Host(`chatroom.openfun.app`)"
+      - "traefik.http.routers.chatroom.entrypoints=websecure"
+      - "traefik.http.routers.chatroom.tls.certresolver=letsencrypt"
+      - "traefik.http.services.chatroom.loadbalancer.server.port=${PORT:-3000}"
