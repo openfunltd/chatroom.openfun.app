@@ -3,7 +3,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:${PORT:-3000}"
+      - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"
     environment:
       - PORT=${PORT:-3000}
       - WS_PATH=${WS_PATH:-/ws}
